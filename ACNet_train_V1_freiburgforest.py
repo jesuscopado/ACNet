@@ -26,10 +26,9 @@ freiburgforest_frq = []
 weight_path = 'data/freiburgforest_6class_weight.txt'
 with open(weight_path, 'r') as f:
     context = f.readlines()
-
-for x in context[1:]:
-    x = x.strip().strip('\ufeff')
-    freiburgforest_frq.append(float(x))
+    for x in context:
+        x = x.strip().strip('\ufeff')
+        freiburgforest_frq.append(float(x))
 
 print(len(freiburgforest_frq))
 parser = argparse.ArgumentParser(description='Multimodal Semantic Segmentation')
