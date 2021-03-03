@@ -116,7 +116,6 @@ def train():
 
     for epoch in tqdm(range(int(args.start_epoch), args.epochs)):
 
-        scheduler.step(epoch)
         local_count = 0
         last_count = 0
         end_time = time.time()
@@ -158,6 +157,7 @@ def train():
                 writer.add_scalar('CrossEntropyLoss', loss.data, global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_lr()[0], global_step=global_step)
                 last_count = local_count
+        scheduler.step(epoch)
 
     save_ckpt(args.ckpt_dir, model, optimizer, global_step, args.epochs,
               0, num_train)
