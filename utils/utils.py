@@ -1,11 +1,9 @@
-import numpy as np
-from torch import nn
-import torch
 import os
 
+import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.autograd import Variable
+from torch import nn
 
 med_frq = [0.382900, 0.452448, 0.637584, 0.377464, 0.585595,
            0.479574, 0.781544, 0.982534, 1.017466, 0.624581,
@@ -45,8 +43,7 @@ label_colours = [(0, 0, 0),
 class CrossEntropyLoss2d_eval(nn.Module):
     def __init__(self, weight=med_frq):
         super(CrossEntropyLoss2d_eval, self).__init__()
-        self.ce_loss = nn.CrossEntropyLoss(torch.from_numpy(np.array(weight)).float(),
-                                           size_average=False, reduce=False)
+        self.ce_loss = nn.CrossEntropyLoss(torch.from_numpy(np.array(weight)).float(), reduction='none')
 
     def forward(self, inputs_scales, targets_scales):
         losses = []
@@ -61,11 +58,11 @@ class CrossEntropyLoss2d_eval(nn.Module):
         total_loss = sum(losses)
         return total_loss
 
+
 class CrossEntropyLoss2d(nn.Module):
     def __init__(self, weight=med_frq):
         super(CrossEntropyLoss2d, self).__init__()
-        self.ce_loss = nn.CrossEntropyLoss(torch.from_numpy(np.array(weight)).float(),
-                                           size_average=False, reduce=False)
+        self.ce_loss = nn.CrossEntropyLoss(torch.from_numpy(np.array(weight)).float(), reduction='none')
 
     def forward(self, inputs_scales, targets_scales):
         losses = []
@@ -78,6 +75,7 @@ class CrossEntropyLoss2d(nn.Module):
         total_loss = sum(losses)
         return total_loss
 
+
 # hxx add, focal loss
 class FocalLoss(nn.Module):
     def __init__(self, gamma=0, weight=None, size_average=True):
@@ -85,10 +83,10 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.size_average = size_average
         self.loss = nn.NLLLoss(weight=torch.from_numpy(np.array(weight)).float(),
-                                 size_average=self.size_average, reduce=False)
+                               size_average=self.size_average, reduce=False)
 
     def forward(self, input, target):
-        return self.loss((1 - F.softmax(input, 1))**2 * F.log_softmax(input, 1), target)
+        return self.loss((1 - F.softmax(input, 1)) ** 2 * F.log_softmax(input, 1), target)
 
 
 class FocalLoss2d(nn.Module):
@@ -119,6 +117,7 @@ def color_label_eval(label):
 
     # return torch.from_numpy(colored.transpose([1, 0, 2, 3]))
     return colored.transpose([0, 2, 1])
+
 
 def color_label(label):
     label = label.clone().cpu().data.numpy()
@@ -198,26 +197,30 @@ def intersectionAndUnion(imPred, imLab, numClass):
 
     return (area_intersection, area_union)
 
+
 def accuracy(preds, label):
-    valid = (label > 0) # hxx
+    valid = (label > 0)  # hxx
     acc_sum = (valid * (preds == label)).sum()
     valid_sum = valid.sum()
     acc = float(acc_sum) / (valid_sum + 1e-10)
     return acc, valid_sum
 
+
 def macc(preds, label, num_class):
     a = np.zeros(num_class)
     b = np.zeros(num_class)
     for i in range(num_class):
-        mask = (label == i+1)
-        a_sum = (mask * preds == i+1).sum()
+        mask = (label == i + 1)
+        a_sum = (mask * preds == i + 1).sum()
         b_sum = mask.sum()
         a[i] = a_sum
         b[i] = b_sum
-    return a,b
+    return a, b
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.initialized = False
         self.val = None
