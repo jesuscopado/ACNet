@@ -52,8 +52,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--print-freq', '-p', default=100, type=int,
                     metavar='N', help='print batch frequency (default: 50)')
-parser.add_argument('--save-epoch-freq', '-s', default=5, type=int,
-                    metavar='N', help='save epoch frequency (default: 5)')
+parser.add_argument('--save-epoch-freq', '-s', default=50, type=int,
+                    metavar='N', help='save epoch frequency (default: 50)')
 parser.add_argument('--last-ckpt', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--lr-decay-rate', default=0.8, type=float,
@@ -114,7 +114,7 @@ def train():
 
     writer = SummaryWriter(args.summary_dir)
 
-    for epoch in tqdm(range(int(args.start_epoch), args.epochs)):
+    for epoch in range(int(args.start_epoch), args.epochs):
 
         local_count = 0
         last_count = 0
