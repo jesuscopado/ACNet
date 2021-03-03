@@ -155,9 +155,9 @@ def train():
                 grid_image = make_grid(utils.color_label(target_scales[0][:3]), 3, normalize=False, range=(0, 255))
                 writer.add_image('Groundtruth label', grid_image, global_step)
                 writer.add_scalar('CrossEntropyLoss', loss.data, global_step=global_step)
-                writer.add_scalar('Learning rate', scheduler.get_lr()[0], global_step=global_step)
+                writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
                 last_count = local_count
-        scheduler.step(epoch)
+        scheduler.step()
 
     save_ckpt(args.ckpt_dir, model, optimizer, global_step, args.epochs,
               0, num_train)
