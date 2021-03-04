@@ -118,7 +118,8 @@ class scaleNorm(object):
         # Nearest-neighbor
         depth = skimage.transform.resize(depth, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
-        label = skimage.transform.resize(label, (image_h, image_w), order=0)
+        label = skimage.transform.resize(label, (image_h, image_w), order=0,
+                                         mode='edge', preserve_range=True)
 
         if np.any(label == 0):
             print('after scaleNorm')
