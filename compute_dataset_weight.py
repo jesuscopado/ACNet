@@ -28,7 +28,7 @@ def main():
         label_path = os.path.join(args.labels_dir, filename)
         label = imageio.imread(label_path).flatten()
         labels = np.concatenate((labels, label))
-    weight = labels_to_class_weights(labels)
+    weight = labels_to_class_weights(labels - 1)
     np.savetxt(args.output_file, weight, delimiter='\n', fmt='%.6f')
 
 

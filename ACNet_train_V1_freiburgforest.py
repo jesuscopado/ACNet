@@ -23,17 +23,17 @@ from utils.utils import print_log
 from utils.utils import save_ckpt
 
 freiburgforest_frq = []
-weight_path = 'data/freiburgforest_6class_weight.txt'
+weight_path = 'data/freiburgforest_5class_weight.txt'
 with open(weight_path, 'r') as f:
     context = f.readlines()
     for x in context:
         x = x.strip().strip('\ufeff')
         freiburgforest_frq.append(float(x))
+print("Number of class weights:", len(freiburgforest_frq))
 
-print(len(freiburgforest_frq))
 parser = argparse.ArgumentParser(description='Multimodal Semantic Segmentation')
-parser.add_argument('--data-dir', default=None, metavar='DIR',
-                    help='path to dataset-D')
+parser.add_argument('--train-dir', default=None, metavar='DIR',
+                    help='path to train dataset')
 parser.add_argument('--cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
@@ -84,16 +84,16 @@ def train():
         ACNet_data.RandomFlip(),
         ACNet_data.ToTensor(),
         ACNet_data.Normalize()
-    ]), data_dir=os.path.join(args.data_dir, 'train'))
+    ]), data_dir=os.path.join(args.train_dir))
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.workers, pin_memory=False)
 
     num_train = len(train_data)
 
     if args.last_ckpt:
-        model = ACNet_models_V1.ACNet(num_class=6, pretrained=False)
+        model = ACNet_models_V1.ACNet(num_class=5, pretrained=False)
     else:
-        model = ACNet_models_V1.ACNet(num_class=6, pretrained=True)
+        model = ACNet_models_V1.ACNet(num_class=5, pretrained=True)
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
