@@ -54,6 +54,10 @@ class FreiburgForest(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
+        if np.any(sample['label'] == 0):
+            print('after augment break')
+            raise ValueError
+
         return sample
 
 
