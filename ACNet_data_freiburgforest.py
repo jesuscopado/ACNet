@@ -50,6 +50,15 @@ class FreiburgForest(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
+        ll = sample['label'].clone().cpu().data.numpy()
+        if np.any(ll == 0):
+            print('after scaleNorm')
+            print('max:', ll.max())
+            print('min:', ll.min())
+            print('max original:', self.gt_images[idx].max())
+            print('min original:', self.gt_images[idx].min())
+            raise ValueError
+
         return sample
 
 
@@ -215,7 +224,7 @@ class ToTensor(object):
         depth = np.expand_dims(depth, 0).astype(np.float)
         return {'image': torch.from_numpy(image).float(),
                 'depth': torch.from_numpy(depth).float(),
-                'label': torch.from_numpy(label),
+                'label': torch.from_numpy(label).float(),
                 'label2': torch.from_numpy(label2).float(),
                 'label3': torch.from_numpy(label3).float(),
                 'label4': torch.from_numpy(label4).float(),
