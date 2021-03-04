@@ -59,7 +59,8 @@ class FreiburgForest(Dataset):
         if np.any(sample['label'].clone().cpu().data.numpy() == 0):
             print('after augment break')
             print(np.where(sample['label'].clone().cpu().data.numpy() == 0))
-            print(sample['label'].clone().cpu().data.numpy())
+            print('max:', sample['label'].clone().cpu().data.numpy().max())
+            print('min:', sample['label'].clone().cpu().data.numpy().min())
             print(self.image_names[idx])
             raise ValueError
 
