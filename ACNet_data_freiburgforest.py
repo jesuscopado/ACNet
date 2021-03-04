@@ -59,6 +59,7 @@ class FreiburgForest(Dataset):
         if np.any(sample['label'].clone().cpu().data.numpy() == 0):
             print('after augment break')
             print(np.where(sample['label'].clone().cpu().data.numpy() == 0))
+            print(sample['label'].clone().cpu().data.numpy())
             print(self.image_names[idx])
             raise ValueError
 
@@ -113,9 +114,9 @@ class scaleNorm(object):
                                          mode='reflect', preserve_range=True)
         # Nearest-neighbor
         depth = skimage.transform.resize(depth, (image_h, image_w), order=0,
-                                         mode='reflect')
+                                         mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
-                                         mode='reflect')
+                                         mode='reflect', preserve_range=True)
 
         return {'image': image, 'depth': depth, 'label': label}
 
