@@ -24,6 +24,7 @@ class FreiburgForest(Dataset):
         self.rgb_images = []
         self.evi2_images = []
         self.gt_images = []
+        self.image_names = []
 
         rgb_folder_name = 'rgb'
         evi2_gray_folder_name = 'evi2_gray'
@@ -44,6 +45,7 @@ class FreiburgForest(Dataset):
                 print(gt_path)
                 raise ValueError
             self.gt_images.append(imageio.imread(gt_path))
+            self.image_names.append(basename)
 
     def __len__(self):
         return len(self.rgb_images)
@@ -56,6 +58,8 @@ class FreiburgForest(Dataset):
 
         if np.any(sample['label'].clone().cpu().data.numpy() == 0):
             print('after augment break')
+            print(np.where(sample['label'].clone().cpu().data.numpy() == 0))
+            print(self.image_names[idx])
             raise ValueError
 
         return sample
