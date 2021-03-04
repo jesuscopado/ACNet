@@ -105,6 +105,14 @@ class scaleNorm(object):
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
 
+        if np.any(label == 0):
+            print('after scaleNorm')
+            print('max:', label.max())
+            print('min:', label.min())
+            print('max original:', sample['label'].max())
+            print('min original:', sample['label'].min())
+            raise ValueError
+
         return {'image': image, 'depth': depth, 'label': label}
 
 
