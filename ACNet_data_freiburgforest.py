@@ -223,7 +223,7 @@ class ToTensor(object):
         depth = np.expand_dims(depth, 0).astype(np.float)
         return {'image': torch.from_numpy(image).float(),
                 'depth': torch.from_numpy(depth).float(),
-                'label': torch.from_numpy(label).float(),
+                'label': torch.from_numpy(label),
                 'label2': torch.from_numpy(label2).float(),
                 'label3': torch.from_numpy(label3).float(),
                 'label4': torch.from_numpy(label4).float(),
