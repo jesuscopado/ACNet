@@ -23,7 +23,7 @@ from utils.utils import print_log
 from utils.utils import save_ckpt
 
 freiburgforest_frq = []
-weight_path = 'data/freiburgforest_5class_weight.txt'
+weight_path = 'data/freiburgforest_5class_weight_med.txt'
 with open(weight_path, 'r') as f:
     context = f.readlines()
     for x in context:
