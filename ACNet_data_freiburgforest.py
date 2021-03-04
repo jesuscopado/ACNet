@@ -61,6 +61,8 @@ class FreiburgForest(Dataset):
             print(np.where(sample['label'].clone().cpu().data.numpy() == 0))
             print('max:', sample['label'].clone().cpu().data.numpy().max())
             print('min:', sample['label'].clone().cpu().data.numpy().min())
+            print('max original:', self.gt_images[idx].max())
+            print('min original:', self.gt_images[idx].min())
             print(self.image_names[idx])
             raise ValueError
 
