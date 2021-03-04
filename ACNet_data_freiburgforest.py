@@ -39,6 +39,10 @@ class FreiburgForest(Dataset):
 
             self.rgb_images.append(imageio.imread(rgb_path))
             self.evi2_images.append(imageio.imread(evi2_gray_path))
+            gt_test = imageio.imread(gt_path)
+            if np.any(gt_test == 0):
+                print(gt_path)
+                raise ValueError
             self.gt_images.append(imageio.imread(gt_path))
 
     def __len__(self):
