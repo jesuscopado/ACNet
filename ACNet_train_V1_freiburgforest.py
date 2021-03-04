@@ -145,14 +145,14 @@ def train():
 
                 for name, param in model.named_parameters():
                     writer.add_histogram(name, param.clone().cpu().data.numpy(), global_step, bins='doane')
-                grid_image = make_grid(image[:3].clone().cpu().data, 3, normalize=True)
+                grid_image = make_grid(image[:3].clone().cpu().data, 3, normalize=False)
                 writer.add_image('image', grid_image, global_step)
-                grid_image = make_grid(depth[:3].clone().cpu().data, 3, normalize=True)
+                grid_image = make_grid(depth[:3].clone().cpu().data, 3, normalize=False)
                 writer.add_image('depth', grid_image, global_step)
-                grid_image = make_grid(utils.color_label(torch.max(pred_scales[0][:3], 1)[1] + 1), 3, normalize=False,
+                grid_image = make_grid(utils.color_label(torch.max(pred_scales[0][:3], 1)[1] + 1), 3, normalize=True,
                                        range=(0, 255))
                 writer.add_image('Predicted label', grid_image, global_step)
-                grid_image = make_grid(utils.color_label(target_scales[0][:3]), 3, normalize=False, range=(0, 255))
+                grid_image = make_grid(utils.color_label(target_scales[0][:3]), 3, normalize=True, range=(0, 255))
                 writer.add_image('Groundtruth label', grid_image, global_step)
                 writer.add_scalar('CrossEntropyLoss', loss.data, global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
