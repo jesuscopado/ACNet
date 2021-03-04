@@ -24,7 +24,6 @@ class FreiburgForest(Dataset):
         self.rgb_images = []
         self.evi2_images = []
         self.gt_images = []
-        self.image_names = []
 
         rgb_folder_name = 'rgb'
         evi2_gray_folder_name = 'evi2_gray'
@@ -40,12 +39,7 @@ class FreiburgForest(Dataset):
 
             self.rgb_images.append(imageio.imread(rgb_path))
             self.evi2_images.append(imageio.imread(evi2_gray_path))
-            gt_test = imageio.imread(gt_path)
-            if np.any(gt_test == 0):
-                print(gt_path)
-                raise ValueError
-            self.gt_images.append(imageio.imread(gt_path))
-            self.image_names.append(basename)
+            self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
 
     def __len__(self):
         return len(self.rgb_images)
@@ -55,16 +49,6 @@ class FreiburgForest(Dataset):
 
         if self.transform:
             sample = self.transform(sample)
-
-        if np.any(sample['label'].clone().cpu().data.numpy() == 0):
-            print('after augment break')
-            print(np.where(sample['label'].clone().cpu().data.numpy() == 0))
-            print('max:', sample['label'].clone().cpu().data.numpy().max())
-            print('min:', sample['label'].clone().cpu().data.numpy().min())
-            print('max original:', self.gt_images[idx].max())
-            print('min original:', self.gt_images[idx].min())
-            print(self.image_names[idx])
-            raise ValueError
 
         return sample
 
@@ -118,16 +102,8 @@ class scaleNorm(object):
         # Nearest-neighbor
         depth = skimage.transform.resize(depth, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
-        label = skimage.transform.resize(label.astype(float), (image_h, image_w), order=0,
-                                         mode='edge', preserve_range=True)
-
-        if np.any(label == 0):
-            print('after scaleNorm')
-            print('max:', label.max())
-            print('min:', label.min())
-            print('max original:', sample['label'].max())
-            print('min original:', sample['label'].min())
-            raise ValueError
+        label = skimage.transform.resize(label, (image_h, image_w), order=0,
+                                         mode='reflect', preserve_range=True)
 
         return {'image': image, 'depth': depth, 'label': label}
 
