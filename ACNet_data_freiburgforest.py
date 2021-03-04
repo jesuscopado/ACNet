@@ -113,9 +113,9 @@ class scaleNorm(object):
                                          mode='reflect', preserve_range=True)
         # Nearest-neighbor
         depth = skimage.transform.resize(depth, (image_h, image_w), order=0,
-                                         mode='reflect', preserve_range=True)
+                                         mode='reflect')
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
-                                         mode='reflect', preserve_range=True)
+                                         mode='reflect')
 
         return {'image': image, 'depth': depth, 'label': label}
 
