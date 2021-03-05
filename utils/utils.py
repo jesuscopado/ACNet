@@ -105,8 +105,8 @@ def color_label_eval(label):
 
 
 def color_label(label):
-    label = label.clone().cpu().data.numpy()
-    colored_label = np.vectorize(lambda x: label_colours[int(x)])
+    label = label.clone().cpu().data.numpy().astype(int)
+    colored_label = np.vectorize(lambda x: label_colours[x])
 
     colored = np.asarray(colored_label(label)).astype(np.float32)
     colored = colored.squeeze()

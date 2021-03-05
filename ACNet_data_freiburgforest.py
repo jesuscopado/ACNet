@@ -50,15 +50,6 @@ class FreiburgForest(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        ll = sample['label'].clone().cpu().data.numpy()
-        if np.any(ll == 0):
-            print('after scaleNorm')
-            print('max:', ll.max())
-            print('min:', ll.min())
-            print('max original:', self.gt_images[idx].max())
-            print('min original:', self.gt_images[idx].min())
-            raise ValueError
-
         return sample
 
 
@@ -113,14 +104,6 @@ class scaleNorm(object):
                                          mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
-
-        if np.any(label == 0):
-            print('after scaleNorm')
-            print('max:', label.max())
-            print('min:', label.min())
-            print('max original:', sample['label'].max())
-            print('min original:', sample['label'].min())
-            raise ValueError
 
         return {'image': image, 'depth': depth, 'label': label}
 
