@@ -210,7 +210,7 @@ def compute_IoU(y_pred, y_true, num_classes):
     predicted_set = current.sum(axis=0)
     union = ground_truth_set + predicted_set - intersection
     IoU = intersection / union.astype(np.float32)
-    return np.mean(IoU)
+    return IoU
 
 
 def accuracy(preds, label):
