@@ -149,7 +149,21 @@ def train():
                 writer.add_scalar('CrossEntropyLoss', loss.item(), global_step=global_step)
                 writer.add_scalar('CrossEntropyLoss (averaged)', sum(losses) / args.print_freq, global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
-                last_count = local_count
+
+                iou = utils.compute_IoU(
+                    y_pred=(torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
+                    y_true=target_scales[0].detach().cpu().numpy().astype(int),
+                    num_classes=5
+                )
+                writer.add_scalar('IoU_Road', iou[0], global_step=global_step)
+                writer.add_scalar('IoU_Grass', iou[1], global_step=global_step)
+                writer.add_scalar('IoU_Vegetation', iou[2], global_step=global_step)
+                writer.add_scalar('IoU_Sky', iou[3], global_step=global_step)
+                writer.add_scalar('IoU_Obstacle', iou[4], global_step=global_step)
+                writer.add_scalar('mIoU', np.mean(iou), global_step=global_step)
+
+                losses = []
+
         scheduler.step()
 
     utils.save_ckpt(args.ckpt_dir, model, optimizer, global_step, args.epochs)
