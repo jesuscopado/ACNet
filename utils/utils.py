@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import confusion_matrix
 from torch import nn
 
 med_frq = [2.422187, 0.888967, 0.573932, 1.000000, 70.225625]
@@ -94,18 +95,19 @@ class FocalLoss2d(nn.Module):
 
 
 def color_label_eval(label):
-    # label = label.clone().cpu().data.numpy()
-    colored_label = np.vectorize(lambda x: label_colours[int(x)])
+    # label = label.detach().cpu().numpy()
+    label = label.astype(int)
+    colored_label = np.vectorize(lambda x: label_colours[x])
 
     colored = np.asarray(colored_label(label)).astype(np.float32)
     colored = colored.squeeze()
 
     # return torch.from_numpy(colored.transpose([1, 0, 2, 3]))
-    return colored.transpose([0, 2, 1])
+    return colored
 
 
 def color_label(label):
-    label = label.clone().cpu().data.numpy().astype(int)
+    label = label.detach().cpu().numpy().astype(int)
     colored_label = np.vectorize(lambda x: label_colours[x])
 
     colored = np.asarray(colored_label(label)).astype(np.float32)
@@ -121,10 +123,10 @@ def print_log(global_step, epoch, local_count, count_inter, dataset_size, loss, 
     print('Step: {:>5} Train Epoch: {:>3} [{:>4}/{:>4} ({:3.1f}%)]    '
           'Loss: {:.6f} [{:.2f}s every {:>4} data]'.format(
         global_step, epoch, local_count, dataset_size,
-        100. * local_count / dataset_size, loss.data, time_inter, count_inter))
+        100. * local_count / dataset_size, loss.item(), time_inter, count_inter))
 
 
-def save_ckpt(ckpt_dir, model, optimizer, global_step, epoch, local_count, num_train):
+def save_ckpt_old(ckpt_dir, model, optimizer, global_step, epoch, local_count, num_train):
     # usually this happens only on the start of a epoch
     epoch_float = epoch + (local_count / num_train)
     state = {
@@ -134,6 +136,19 @@ def save_ckpt(ckpt_dir, model, optimizer, global_step, epoch, local_count, num_t
         'optimizer': optimizer.state_dict(),
     }
     ckpt_model_filename = "ckpt_epoch_{:0.2f}.pth".format(epoch_float)
+    path = os.path.join(ckpt_dir, ckpt_model_filename)
+    torch.save(state, path)
+    print('{:>2} has been successfully saved'.format(path))
+
+
+def save_ckpt(ckpt_dir, model, optimizer, global_step, epoch):
+    state = {
+        'global_step': global_step,
+        'epoch': epoch,
+        'state_dict': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+    }
+    ckpt_model_filename = 'ckpt_model.pth'
     path = os.path.join(ckpt_dir, ckpt_model_filename)
     torch.save(state, path)
     print('{:>2} has been successfully saved'.format(path))
@@ -176,8 +191,8 @@ def intersectionAndUnion(imPred, imLab, numClass):
         intersection, bins=numClass, range=(1, numClass))
 
     # Compute area union:
-    (area_pred, _) = np.histogram(imPred, bins=numClass, range=(1, numClass))
-    (area_lab, _) = np.histogram(imLab, bins=numClass, range=(1, numClass))
+    area_pred, _ = np.histogram(imPred, bins=numClass, range=(1, numClass))
+    area_lab, _ = np.histogram(imLab, bins=numClass, range=(1, numClass))
     area_union = area_pred + area_lab - area_intersection
 
     return (area_intersection, area_union)

@@ -24,6 +24,7 @@ class FreiburgForest(Dataset):
         self.rgb_images = []
         self.evi2_images = []
         self.gt_images = []
+        self.basenames = []
 
         rgb_folder_name = 'rgb'
         evi2_gray_folder_name = 'evi2_gray'
@@ -40,15 +41,18 @@ class FreiburgForest(Dataset):
             self.rgb_images.append(imageio.imread(rgb_path))
             self.evi2_images.append(imageio.imread(evi2_gray_path))
             self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
+            self.basenames.append(basename)
 
     def __len__(self):
         return len(self.rgb_images)
 
     def __getitem__(self, idx):
-        sample = {'image': self.rgb_images[idx], 'depth': self.evi2_images[idx], 'label': self.gt_images[idx]}
+        sample = {'rgb': self.rgb_images[idx], 'evi': self.evi2_images[idx], 'label': self.gt_images[idx]}
 
         if self.transform:
             sample = self.transform(sample)
+
+        sample['basename'] = self.basenames[idx]
 
         return sample
 
@@ -77,7 +81,7 @@ class RandomHSV(object):
         self.v_range = v_range
 
     def __call__(self, sample):
-        img = sample['image']
+        img = sample['rgb']
         img_hsv = matplotlib.colors.rgb_to_hsv(img)
         img_h, img_s, img_v = img_hsv[:, :, 0], img_hsv[:, :, 1], img_hsv[:, :, 2]
         h_random = np.random.uniform(min(self.h_range), max(self.h_range))
@@ -89,23 +93,23 @@ class RandomHSV(object):
         img_hsv = np.stack([img_h, img_s, img_v], axis=2)
         img_new = matplotlib.colors.hsv_to_rgb(img_hsv)
 
-        return {'image': img_new, 'depth': sample['depth'], 'label': sample['label']}
+        return {'rgb': img_new, 'evi': sample['evi'], 'label': sample['label']}
 
 
 class scaleNorm(object):
     def __call__(self, sample):
-        image, depth, label = sample['image'], sample['depth'], sample['label']
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
 
         # Bi-linear
-        image = skimage.transform.resize(image, (image_h, image_w), order=1,
+        rgb = skimage.transform.resize(rgb, (image_h, image_w), order=1,
                                          mode='reflect', preserve_range=True)
         # Nearest-neighbor
-        depth = skimage.transform.resize(depth, (image_h, image_w), order=0,
+        evi = skimage.transform.resize(evi, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
 
-        return {'image': image, 'depth': depth, 'label': label}
+        return {'rgb': rgb, 'evi': evi, 'label': label}
 
 
 class RandomScale(object):
@@ -114,22 +118,22 @@ class RandomScale(object):
         self.scale_high = max(scale)
 
     def __call__(self, sample):
-        image, depth, label = sample['image'], sample['depth'], sample['label']
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
 
         target_scale = random.uniform(self.scale_low, self.scale_high)
         # (H, W, C)
-        target_height = int(round(target_scale * image.shape[0]))
-        target_width = int(round(target_scale * image.shape[1]))
+        target_height = int(round(target_scale * rgb.shape[0]))
+        target_width = int(round(target_scale * rgb.shape[1]))
         # Bi-linear
-        image = skimage.transform.resize(image, (target_height, target_width),
+        rgb = skimage.transform.resize(rgb, (target_height, target_width),
                                          order=1, mode='reflect', preserve_range=True)
         # Nearest-neighbor
-        depth = skimage.transform.resize(depth, (target_height, target_width),
+        evi = skimage.transform.resize(evi, (target_height, target_width),
                                          order=0, mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (target_height, target_width),
                                          order=0, mode='reflect', preserve_range=True)
 
-        return {'image': image, 'depth': depth, 'label': label}
+        return {'rgb': rgb, 'evi': evi, 'label': label}
 
 
 class RandomCrop(object):
@@ -138,48 +142,48 @@ class RandomCrop(object):
         self.tw = tw
 
     def __call__(self, sample):
-        image, depth, label = sample['image'], sample['depth'], sample['label']
-        h = image.shape[0]
-        w = image.shape[1]
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        h = rgb.shape[0]
+        w = rgb.shape[1]
         i = random.randint(0, h - self.th)
         j = random.randint(0, w - self.tw)
 
-        return {'image': image[i:i + image_h, j:j + image_w, :],
-                'depth': depth[i:i + image_h, j:j + image_w],
+        return {'rgb': rgb[i:i + image_h, j:j + image_w, :],
+                'evi': evi[i:i + image_h, j:j + image_w],
                 'label': label[i:i + image_h, j:j + image_w]}
 
 
 class RandomFlip(object):
     def __call__(self, sample):
-        image, depth, label = sample['image'], sample['depth'], sample['label']
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
         if random.random() > 0.5:
-            image = np.fliplr(image).copy()
-            depth = np.fliplr(depth).copy()
+            rgb = np.fliplr(rgb).copy()
+            evi = np.fliplr(evi).copy()
             label = np.fliplr(label).copy()
 
-        return {'image': image, 'depth': depth, 'label': label}
+        return {'rgb': rgb, 'evi': evi, 'label': label}
 
 
 # Transforms on torch.*Tensor
 class Normalize(object):
     def __call__(self, sample):
-        image, depth = sample['image'], sample['depth']
-        image = image / 255.
-        depth = depth / 255.
+        rgb, evi = sample['rgb'], sample['evi']
+        rgb = rgb / 255.
+        evi = evi / 255.
 
         '''
-        # image = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-        #                                          std=[0.229, 0.224, 0.225])(image)
-        image = torchvision.transforms.Normalize(mean=[0.4850042694973687, 0.41627756261047333, 0.3981809741523051],
+        # rgb = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+        #                                          std=[0.229, 0.224, 0.225])(rgb)
+        rgb = torchvision.transforms.Normalize(mean=[0.4850042694973687, 0.41627756261047333, 0.3981809741523051],
                                                  std=[0.26415541082494515, 0.2728415392982039, 0.2831175140191598])(
-            image)
-        depth = torchvision.transforms.Normalize(mean=[2.8424503515351494],
-                                                 std=[0.9932836506164299])(depth)
+            rgb)
+        evi = torchvision.transforms.Normalize(mean=[2.8424503515351494],
+                                                 std=[0.9932836506164299])(evi)
         '''
-        # TODO: compute mean and std for evi2_gray images
+        # TODO: compute mean and std for evi2_gray rgbs
 
-        sample['image'] = image
-        sample['depth'] = depth
+        sample['rgb'] = rgb
+        sample['evi'] = evi
 
         return sample
 
@@ -188,7 +192,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        image, depth, label = sample['image'], sample['depth'], sample['label']
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
 
         # Generate different label scales
         label2 = skimage.transform.resize(label, (label.shape[0] // 2, label.shape[1] // 2),
@@ -203,10 +207,10 @@ class ToTensor(object):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
-        image = image.transpose((2, 0, 1))
-        depth = np.expand_dims(depth, 0).astype(np.float)
-        return {'image': torch.from_numpy(image).float(),
-                'depth': torch.from_numpy(depth).float(),
+        rgb = rgb.transpose((2, 0, 1))
+        evi = np.expand_dims(evi, 0).astype(np.float)
+        return {'rgb': torch.from_numpy(rgb).float(),
+                'evi': torch.from_numpy(evi).float(),
                 'label': torch.from_numpy(label).float(),
                 'label2': torch.from_numpy(label2).float(),
                 'label3': torch.from_numpy(label3).float(),
