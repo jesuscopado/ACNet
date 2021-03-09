@@ -209,7 +209,7 @@ def compute_IoU(y_pred, y_true, num_classes):
     ground_truth_set = current.sum(axis=1)
     predicted_set = current.sum(axis=0)
     union = ground_truth_set + predicted_set - intersection
-    IoU = intersection / union.astype(np.float32)
+    IoU = intersection / (union.astype(np.float32) + 1e-10)
     return IoU
 
 
