@@ -83,7 +83,7 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=os.path.join(args.train_dir)
+        data_dir=args.train_dir
     )
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.workers, pin_memory=False)

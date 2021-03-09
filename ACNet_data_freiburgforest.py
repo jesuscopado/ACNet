@@ -171,16 +171,10 @@ class Normalize(object):
         rgb = rgb / 255.
         evi = evi / 255.
 
-        '''
-        # rgb = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-        #                                          std=[0.229, 0.224, 0.225])(rgb)
-        rgb = torchvision.transforms.Normalize(mean=[0.4850042694973687, 0.41627756261047333, 0.3981809741523051],
-                                                 std=[0.26415541082494515, 0.2728415392982039, 0.2831175140191598])(
-            rgb)
-        evi = torchvision.transforms.Normalize(mean=[2.8424503515351494],
-                                                 std=[0.9932836506164299])(evi)
-        '''
-        # TODO: compute mean and std for evi2_gray rgbs
+        rgb = torchvision.transforms.Normalize(mean=[0.462971, 0.397023, 0.326541],
+                                               std=[0.293528, 0.293154, 0.307788])(rgb)
+        evi = torchvision.transforms.Normalize(mean=[0.632958],
+                                               std=[0.150213])(evi)
 
         sample['rgb'] = rgb
         sample['evi'] = evi
