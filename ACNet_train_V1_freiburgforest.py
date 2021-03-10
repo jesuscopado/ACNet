@@ -146,7 +146,7 @@ def train():
                 grid_image = make_grid(utils.color_label(target_scales[0][:3]), 3, normalize=True, range=(0, 255))
                 writer.add_image('GroundTruth', grid_image, global_step)
                 writer.add_scalar('CrossEntropyLoss', loss.item(), global_step=global_step)
-                writer.add_scalar('CrossEntropyLoss average', sum(losses) / args.print_freq, global_step=global_step)
+                writer.add_scalar('CrossEntropyLoss average', sum(losses) / len(losses), global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
                 writer.add_scalar('Accuracy', utils.accuracy(
                     (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
