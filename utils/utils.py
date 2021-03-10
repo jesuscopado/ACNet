@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 import torch
@@ -141,12 +142,13 @@ def save_ckpt_old(ckpt_dir, model, optimizer, global_step, epoch, local_count, n
     print('{:>2} has been successfully saved'.format(path))
 
 
-def save_ckpt(ckpt_dir, model, optimizer, global_step, epoch):
+def save_ckpt(ckpt_dir, model, optimizer, scheduler, global_step, epoch):
     state = {
         'global_step': global_step,
         'epoch': epoch,
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
+        'scheduler': scheduler.state_dict(),
     }
     ckpt_model_filename = 'ckpt_model.pth'
     path = os.path.join(ckpt_dir, ckpt_model_filename)
@@ -154,7 +156,7 @@ def save_ckpt(ckpt_dir, model, optimizer, global_step, epoch):
     print('{:>2} has been successfully saved'.format(path))
 
 
-def load_ckpt(model, optimizer, model_file, device):
+def load_ckpt(model, optimizer, scheduler, model_file, device):
     if os.path.isfile(model_file):
         print("=> loading checkpoint '{}'".format(model_file))
         if device.type == 'cuda':
@@ -164,6 +166,8 @@ def load_ckpt(model, optimizer, model_file, device):
         model.load_state_dict(checkpoint['state_dict'])
         if optimizer:
             optimizer.load_state_dict(checkpoint['optimizer'])
+        if scheduler:
+            scheduler.load_state_dict(checkpoint['scheduler'])
         print("=> loaded checkpoint '{}' (epoch {})"
               .format(model_file, checkpoint['epoch']))
         step = checkpoint['global_step']
@@ -171,7 +175,7 @@ def load_ckpt(model, optimizer, model_file, device):
         return step, epoch
     else:
         print("=> no checkpoint found at '{}'".format(model_file))
-        os._exit(0)
+        sys.exit()
 
 
 # added by hxx for iou calculation

@@ -103,21 +103,20 @@ def train():
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr,
                                 momentum=args.momentum, weight_decay=args.weight_decay)
 
-    global_step = 0
-
-    if args.last_ckpt:
-        global_step, args.start_epoch = utils.load_ckpt(model, optimizer, args.last_ckpt, device)
-
     lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
     scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
 
-    writer = SummaryWriter(args.summary_dir)
+    global_step = 0
 
+    if args.last_ckpt:
+        global_step, args.start_epoch = utils.load_ckpt(model, optimizer, scheduler, args.last_ckpt, device)
+
+    writer = SummaryWriter(args.summary_dir)
     losses = []
     for epoch in tqdm(range(int(args.start_epoch), args.epochs)):
 
         if epoch % args.save_epoch_freq == 0 and epoch != args.start_epoch:
-            utils.save_ckpt(args.ckpt_dir, model, optimizer, global_step, epoch)
+            utils.save_ckpt(args.ckpt_dir, model, optimizer, scheduler, global_step, epoch)
 
         for batch_idx, sample in enumerate(train_loader):
             rgb = sample['rgb'].to(device)
@@ -168,7 +167,7 @@ def train():
 
         scheduler.step()
 
-    utils.save_ckpt(args.ckpt_dir, model, optimizer, global_step, args.epochs)
+    utils.save_ckpt(args.ckpt_dir, model, optimizer, scheduler, global_step, args.epochs)
     print("Training completed ")
 
 

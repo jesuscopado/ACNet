@@ -60,7 +60,7 @@ def visualize_result(img, evi, label, preds, info, args):
 
 def evaluate():
     model = ACNet_models_V1.ACNet(num_class=5, pretrained=False)
-    load_ckpt(model, None, args.last_ckpt, device)
+    load_ckpt(model, None, None, args.last_ckpt, device)
     model.eval()
     model.to(device)
 
