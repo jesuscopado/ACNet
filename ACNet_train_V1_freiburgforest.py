@@ -150,7 +150,7 @@ def train():
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
                 writer.add_scalar('Accuracy', utils.accuracy(
                     (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
-                    target_scales[0].detach().cpu().numpy().astype(int)), global_step=global_step)
+                    target_scales[0].detach().cpu().numpy().astype(int))[0], global_step=global_step)
                 iou = utils.compute_IoU(
                     y_pred=(torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
                     y_true=target_scales[0].detach().cpu().numpy().astype(int),
