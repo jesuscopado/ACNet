@@ -66,7 +66,7 @@ def evaluate():
 
     val_data = ACNet_data.FreiburgForest(
         transform=torchvision.transforms.Compose([
-            ACNet_data.scaleNorm(),
+            ACNet_data.ScaleNorm(),
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),

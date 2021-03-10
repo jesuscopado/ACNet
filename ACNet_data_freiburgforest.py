@@ -93,7 +93,7 @@ class RandomHSV(object):
         return {'rgb': img_new, 'evi': sample['evi'], 'label': sample['label']}
 
 
-class scaleNorm(object):
+class ScaleNorm(object):
     def __call__(self, sample):
         rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
 

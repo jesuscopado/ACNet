@@ -18,7 +18,7 @@ args = parser.parse_args()
 def main():
     train_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
-            ACNet_data.scaleNorm(),
+            ACNet_data.ScaleNorm(),
             ACNet_data.Normalize()
         ]),
         data_dir=args.train_dir
