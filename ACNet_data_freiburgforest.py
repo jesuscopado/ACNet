@@ -1,17 +1,14 @@
-import numpy as np
-import scipy.io
-import imageio
-import h5py
 import os
-from torch.utils.data import Dataset
-import matplotlib
-import matplotlib.colors
-import skimage.transform
 import random
-import torchvision
-import torch
 
 import imageio
+import matplotlib
+import matplotlib.colors
+import numpy as np
+import skimage.transform
+import torch
+import torchvision
+from torch.utils.data import Dataset
 
 image_h = 384
 image_w = 768
@@ -102,10 +99,10 @@ class scaleNorm(object):
 
         # Bi-linear
         rgb = skimage.transform.resize(rgb, (image_h, image_w), order=1,
-                                         mode='reflect', preserve_range=True)
+                                       mode='reflect', preserve_range=True)
         # Nearest-neighbor
         evi = skimage.transform.resize(evi, (image_h, image_w), order=0,
-                                         mode='reflect', preserve_range=True)
+                                       mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
 
@@ -126,10 +123,10 @@ class RandomScale(object):
         target_width = int(round(target_scale * rgb.shape[1]))
         # Bi-linear
         rgb = skimage.transform.resize(rgb, (target_height, target_width),
-                                         order=1, mode='reflect', preserve_range=True)
+                                       order=1, mode='reflect', preserve_range=True)
         # Nearest-neighbor
         evi = skimage.transform.resize(evi, (target_height, target_width),
-                                         order=0, mode='reflect', preserve_range=True)
+                                       order=0, mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (target_height, target_width),
                                          order=0, mode='reflect', preserve_range=True)
 
@@ -162,6 +159,19 @@ class RandomFlip(object):
             label = np.fliplr(label).copy()
 
         return {'rgb': rgb, 'evi': evi, 'label': label}
+
+
+# Transforms on torch.*Tensor
+class ToZeroOneRange(object):
+    def __call__(self, sample):
+        rgb, evi = sample['rgb'], sample['evi']
+        rgb = rgb / 255.
+        evi = evi / 255.
+
+        sample['rgb'] = rgb
+        sample['evi'] = evi
+
+        return sample
 
 
 # Transforms on torch.*Tensor
