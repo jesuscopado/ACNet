@@ -153,7 +153,6 @@ def save_ckpt(ckpt_dir, model, optimizer, scheduler, global_step, epoch):
     ckpt_model_filename = 'ckpt_model.pth'
     path = os.path.join(ckpt_dir, ckpt_model_filename)
     torch.save(state, path)
-    print('{:>2} has been successfully saved'.format(path))
 
 
 def load_ckpt(model, optimizer, scheduler, model_file, device):
