@@ -74,6 +74,8 @@ def train():
     train_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
             ACNet_data.ScaleNorm(),
+            ACNet_data.RandomRotate((-13, 13)),
+            ACNet_data.RandomSkew((-0.05, 0.10)),
             ACNet_data.RandomScale((1.0, 1.4)),
             ACNet_data.RandomHSV((0.9, 1.1),
                                  (0.9, 1.1),
@@ -81,7 +83,7 @@ def train():
             ACNet_data.RandomCrop(image_h, image_w),
             ACNet_data.RandomFlip(),
             ACNet_data.ToTensor(),
-            ACNet_data.Normalize()
+            ACNet_data.ToZeroOneRange()
         ]),
         data_dir=args.train_dir
     )

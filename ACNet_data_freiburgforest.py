@@ -161,6 +161,40 @@ class RandomFlip(object):
         return {'rgb': rgb, 'evi': evi, 'label': label}
 
 
+class RandomRotate(object):
+    def __init__(self, angle_range):
+        self.angle_low = min(angle_range)
+        self.angle_high = max(angle_range)
+
+    def __call__(self, sample):
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+
+        angle = random.uniform(self.angle_low, self.angle_high)
+
+        rgb = skimage.transform.rotate(rgb, angle=angle, order=1, mode='reflect', preserve_range=True)
+        evi = skimage.transform.rotate(evi, angle=angle, order=0, mode='reflect', preserve_range=True)
+        label = skimage.transform.rotate(label, angle=angle, order=0, mode='reflect', preserve_range=True)
+
+        return {'rgb': rgb, 'evi': evi, 'label': label}
+
+
+class RandomSkew(object):
+    def __init__(self, skew_range):
+        self.skew_low = min(skew_range)
+        self.skew_high = max(skew_range)
+
+    def __call__(self, sample):
+        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+
+        affine_tf = skimage.transform.AffineTransform(shear=random.uniform(self.skew_low, self.skew_high))
+
+        rgb = skimage.transform.warp(rgb, inverse_map=affine_tf, order=1, mode='reflect', preserve_range=True)
+        evi = skimage.transform.warp(evi, inverse_map=affine_tf, order=0, mode='reflect', preserve_range=True)
+        label = skimage.transform.warp(label, inverse_map=affine_tf, order=0, mode='reflect', preserve_range=True)
+
+        return {'rgb': rgb, 'evi': evi, 'label': label}
+
+
 # Transforms on torch.*Tensor
 class ToZeroOneRange(object):
     def __call__(self, sample):
