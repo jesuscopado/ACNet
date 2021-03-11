@@ -165,19 +165,19 @@ def train():
                 with torch.no_grad():
                     model.eval()
 
-                    sample = next(iter(valid_loader))
-                    rgb, evi = sample['rgb'].to(device), sample['evi'].to(device)
-                    target_scales = [sample[s].to(device) for s in ['label', 'label2', 'label3', 'label4', 'label5']]
-                    pred_scales = model(rgb, evi)
-                    loss_valid = criterion(pred_scales, target_scales)
+                    sample_val = next(iter(valid_loader))
+                    rgb_val, evi_val = sample['rgb'].to(device), sample['evi'].to(device)
+                    target_val = sample_val['label']
+                    pred_val = model(rgb_val, evi_val)
+                    loss_val = criterion([pred_val], [target_val])
 
-                    writer.add_scalar('Loss validation', loss_valid.item(), global_step=global_step)
+                    writer.add_scalar('Loss validation', loss_val.item(), global_step=global_step)
                     writer.add_scalar('Accuracy', utils.accuracy(
-                        (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
-                        target_scales[0].detach().cpu().numpy().astype(int))[0], global_step=global_step)
+                        (torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
+                        target_val.detach().cpu().numpy().astype(int))[0], global_step=global_step)
                     iou = utils.compute_IoU(
-                        y_pred=(torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
-                        y_true=target_scales[0].detach().cpu().numpy().astype(int),
+                        y_pred=(torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
+                        y_true=target_val.detach().cpu().numpy().astype(int),
                         num_classes=5
                     )
                     writer.add_scalar('IoU_Road', iou[0], global_step=global_step)
