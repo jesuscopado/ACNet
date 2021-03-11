@@ -83,7 +83,7 @@ def train():
             ACNet_data.RandomCrop(image_h, image_w),
             ACNet_data.RandomFlip(),
             ACNet_data.ToTensor(),
-            ACNet_data.ToZeroOneRange()
+            ACNet_data.Normalize()
         ]),
         data_dir=args.train_dir
     )
@@ -100,8 +100,8 @@ def train():
     model.train()
     model.to(device)
 
-    CEL_weighted = utils.CrossEntropyLoss2d(weight=freiburgforest_frq)
-    CEL_weighted.to(device)
+    criterion = utils.CrossEntropyLoss2d(weight=freiburgforest_frq)
+    criterion.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr,
                                 momentum=args.momentum, weight_decay=args.weight_decay)
 
@@ -127,7 +127,7 @@ def train():
 
             optimizer.zero_grad()
             pred_scales = model(rgb, evi, args.checkpoint)
-            loss = CEL_weighted(pred_scales, target_scales)
+            loss = criterion(pred_scales, target_scales)
             loss.backward()
             optimizer.step()
 
@@ -147,8 +147,8 @@ def train():
                 writer.add_image('Prediction', grid_image, global_step)
                 grid_image = make_grid(utils.color_label(target_scales[0][:3]), 3, normalize=True, range=(0, 255))
                 writer.add_image('GroundTruth', grid_image, global_step)
-                writer.add_scalar('CrossEntropyLoss', loss.item(), global_step=global_step)
-                writer.add_scalar('CrossEntropyLoss average', sum(losses) / len(losses), global_step=global_step)
+                writer.add_scalar('Loss', loss.item(), global_step=global_step)
+                writer.add_scalar('Loss average', sum(losses) / len(losses), global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
                 writer.add_scalar('Accuracy', utils.accuracy(
                     (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
