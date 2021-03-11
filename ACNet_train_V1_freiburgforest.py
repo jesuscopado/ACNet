@@ -71,7 +71,7 @@ image_h = 384
 
 
 def train():
-    train_data = ACNet_data.FreiburgForest(
+    data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
             ACNet_data.ScaleNorm(),
             ACNet_data.RandomRotate((-13, 13)),
@@ -87,9 +87,20 @@ def train():
         ]),
         data_dir=args.train_dir
     )
+
+    # Split dataset into training and validation
+    dataset_length = len(data)
+    valid_split = 0.05  # tiny split due to the small size of the dataset
+    valid_length = int(valid_split * dataset_length)
+    train_length = dataset_length - valid_length
+    train_data, valid_data = torch.utils.data.random_split(data, [train_length, valid_length])
+
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.workers, pin_memory=False)
+    valid_loader = DataLoader(valid_data, batch_size=len(valid_data), shuffle=False,
+                              num_workers=1, pin_memory=False)
 
+    # Initialize model
     if args.last_ckpt:
         model = ACNet_models_V1.ACNet(num_class=5, pretrained=False)
     else:
@@ -100,16 +111,16 @@ def train():
     model.train()
     model.to(device)
 
+    # Initialize criterion, optimizer and scheduler
     criterion = utils.CrossEntropyLoss2d(weight=freiburgforest_frq)
     criterion.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr,
                                 momentum=args.momentum, weight_decay=args.weight_decay)
-
     lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
     scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
-
     global_step = 0
 
+    # Continue training from previous checkpoint
     if args.last_ckpt:
         global_step, args.start_epoch = utils.load_ckpt(model, optimizer, scheduler, args.last_ckpt, device)
 
@@ -121,8 +132,7 @@ def train():
             utils.save_ckpt(args.ckpt_dir, model, optimizer, scheduler, global_step, epoch)
 
         for batch_idx, sample in enumerate(train_loader):
-            rgb = sample['rgb'].to(device)
-            evi = sample['evi'].to(device)
+            rgb, evi = sample['rgb'].to(device), sample['evi'].to(device)
             target_scales = [sample[s].to(device) for s in ['label', 'label2', 'label3', 'label4', 'label5']]
 
             optimizer.zero_grad()
@@ -150,20 +160,34 @@ def train():
                 writer.add_scalar('Loss', loss.item(), global_step=global_step)
                 writer.add_scalar('Loss average', sum(losses) / len(losses), global_step=global_step)
                 writer.add_scalar('Learning rate', scheduler.get_last_lr()[0], global_step=global_step)
-                writer.add_scalar('Accuracy', utils.accuracy(
-                    (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
-                    target_scales[0].detach().cpu().numpy().astype(int))[0], global_step=global_step)
-                iou = utils.compute_IoU(
-                    y_pred=(torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
-                    y_true=target_scales[0].detach().cpu().numpy().astype(int),
-                    num_classes=5
-                )
-                writer.add_scalar('IoU_Road', iou[0], global_step=global_step)
-                writer.add_scalar('IoU_Grass', iou[1], global_step=global_step)
-                writer.add_scalar('IoU_Vegetation', iou[2], global_step=global_step)
-                writer.add_scalar('IoU_Sky', iou[3], global_step=global_step)
-                writer.add_scalar('IoU_Obstacle', iou[4], global_step=global_step)
-                writer.add_scalar('mIoU', np.mean(iou), global_step=global_step)
+
+                # Compute validation metrics
+                with torch.no_grad():
+                    model.eval()
+
+                    sample = next(iter(valid_loader))
+                    rgb, evi = sample['rgb'].to(device), sample['evi'].to(device)
+                    target_scales = [sample[s].to(device) for s in ['label', 'label2', 'label3', 'label4', 'label5']]
+                    pred_scales = model(rgb, evi)
+                    loss_valid = criterion(pred_scales, target_scales)
+
+                    writer.add_scalar('Loss validation', loss_valid.item(), global_step=global_step)
+                    writer.add_scalar('Accuracy', utils.accuracy(
+                        (torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
+                        target_scales[0].detach().cpu().numpy().astype(int))[0], global_step=global_step)
+                    iou = utils.compute_IoU(
+                        y_pred=(torch.argmax(pred_scales[0], 1) + 1).detach().cpu().numpy().astype(int),
+                        y_true=target_scales[0].detach().cpu().numpy().astype(int),
+                        num_classes=5
+                    )
+                    writer.add_scalar('IoU_Road', iou[0], global_step=global_step)
+                    writer.add_scalar('IoU_Grass', iou[1], global_step=global_step)
+                    writer.add_scalar('IoU_Vegetation', iou[2], global_step=global_step)
+                    writer.add_scalar('IoU_Sky', iou[3], global_step=global_step)
+                    writer.add_scalar('IoU_Obstacle', iou[4], global_step=global_step)
+                    writer.add_scalar('mIoU', np.mean(iou), global_step=global_step)
+
+                    model.train()
 
                 losses = []
 
