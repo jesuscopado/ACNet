@@ -167,7 +167,7 @@ def train():
 
                     sample_val = next(iter(valid_loader))
                     rgb_val, evi_val = sample_val['rgb'].to(device), sample_val['evi'].to(device)
-                    target_val = sample_val['label']
+                    target_val = sample_val['label'].to(device)
                     pred_val = model(rgb_val, evi_val)
                     loss_val = criterion([pred_val], [target_val])
 
