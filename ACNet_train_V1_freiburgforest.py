@@ -31,6 +31,8 @@ print("Number of class weights:", len(freiburgforest_frq))
 parser = argparse.ArgumentParser(description='Multimodal Semantic Segmentation - ACNet training')
 parser.add_argument('--train-dir', default=None, metavar='DIR',
                     help='path to train dataset')
+parser.add_argument('--valid-dir', default=None, metavar='DIR',
+                    help='path to valid dataset')
 parser.add_argument('--cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
@@ -71,7 +73,7 @@ image_h = 384
 
 
 def train():
-    data = ACNet_data.FreiburgForest(
+    train_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
             ACNet_data.ScaleNorm(),
             ACNet_data.RandomRotate((-13, 13)),
@@ -88,12 +90,24 @@ def train():
         data_dir=args.train_dir
     )
 
+    valid_data = ACNet_data.FreiburgForest(
+        transform=transforms.Compose([
+            ACNet_data.ScaleNorm(),
+            ACNet_data.ToTensor(),
+            ACNet_data.Normalize()
+        ]),
+        data_dir=args.valid_dir,
+        fraction=0.1
+    )
+
+    '''
     # Split dataset into training and validation
     dataset_length = len(data)
     valid_split = 0.05  # tiny split due to the small size of the dataset
     valid_length = int(valid_split * dataset_length)
     train_length = dataset_length - valid_length
     train_data, valid_data = torch.utils.data.random_split(data, [train_length, valid_length])
+    '''
 
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.workers, pin_memory=False)

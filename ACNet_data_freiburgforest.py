@@ -15,7 +15,7 @@ image_w = 768
 
 
 class FreiburgForest(Dataset):
-    def __init__(self, transform=None, data_dir=None):
+    def __init__(self, transform=None, data_dir=None, fraction=None):
         self.transform = transform
 
         self.rgb_images = []
@@ -39,6 +39,14 @@ class FreiburgForest(Dataset):
             self.evi2_images.append(imageio.imread(evi2_gray_path))
             self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
             self.basenames.append(basename)
+
+        if fraction is not None:  # Only use a fraction of the data in the directory
+            len_data = len(self.rgb_images)
+            random_indices = random.sample(list(range(len_data)), int(fraction * len_data))
+            self.rgb_images = [self.rgb_images[index] for index in random_indices]
+            self.evi2_images = [self.evi2_images[index] for index in random_indices]
+            self.gt_images = [self.gt_images[index] for index in random_indices]
+            self.basenames = [self.basenames[index] for index in random_indices]
 
     def __len__(self):
         return len(self.rgb_images)
