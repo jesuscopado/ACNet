@@ -128,10 +128,14 @@ def train():
     # Initialize criterion, optimizer and scheduler
     criterion = utils.CrossEntropyLoss2d(weight=freiburgforest_frq)
     criterion.to(device)
+
+    # TODO: try with different optimizers and schedulers (CyclicLR exp_range for example)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr,
                                 momentum=args.momentum, weight_decay=args.weight_decay)
-    lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
-    scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
+    # lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
+    # scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=args.epochs // 4, T_mult=2, eta_min=1e-4)
     global_step = 0
 
     # Continue training from previous checkpoint
