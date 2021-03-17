@@ -1,3 +1,4 @@
+import glob
 import os
 import random
 
@@ -15,44 +16,44 @@ image_w = 768
 
 
 class FreiburgForest(Dataset):
-    def __init__(self, transform=None, data_dir=None, fraction=None):
+    def __init__(self, transform=None, data_dir=None, modal1_name='rgb', modal2_name='evi2_gray', fraction=None):
         self.transform = transform
 
-        self.rgb_images = []
-        self.evi2_images = []
+        self.modal1_images = []
+        self.modal2_images = []
         self.gt_images = []
         self.basenames = []
 
-        rgb_folder_name = 'rgb'
-        evi2_gray_folder_name = 'evi2_gray'
+        modal1_folder_name = modal1_name
+        modal2_folder_name = modal2_name
         gt_folder_name = 'GT'
 
-        for filename_w_ext in os.listdir(os.path.join(data_dir, rgb_folder_name)):
+        for filename_w_ext in os.listdir(os.path.join(data_dir, modal1_folder_name)):
             filename, _ = os.path.splitext(filename_w_ext)
             basename = filename.split('_')[0]
 
-            rgb_path = os.path.join(os.path.join(data_dir, rgb_folder_name), f'{basename}_Clipped.jpg')
-            evi2_gray_path = os.path.join(os.path.join(data_dir, evi2_gray_folder_name), f'{basename}.tif')
-            gt_path = os.path.join(os.path.join(data_dir, gt_folder_name), f'{basename}_mask.png')
+            modal1_path = glob.glob(os.path.join(os.path.join(data_dir, modal1_folder_name), f'{basename}*'))[0]
+            modal2_path = glob.glob(os.path.join(os.path.join(data_dir, modal2_folder_name), f'{basename}*'))[0]
+            gt_path = glob.glob(os.path.join(os.path.join(data_dir, gt_folder_name), f'{basename}*'))[0]
 
-            self.rgb_images.append(imageio.imread(rgb_path))
-            self.evi2_images.append(imageio.imread(evi2_gray_path))
+            self.modal1_images.append(imageio.imread(modal1_path))
+            self.modal2_images.append(imageio.imread(modal2_path))
             self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
             self.basenames.append(basename)
 
         if fraction is not None:  # Only use a fraction of the data in the directory
-            len_data = len(self.rgb_images)
+            len_data = len(self.modal1_images)
             random_indices = random.sample(list(range(len_data)), int(fraction * len_data))
-            self.rgb_images = [self.rgb_images[index] for index in random_indices]
-            self.evi2_images = [self.evi2_images[index] for index in random_indices]
+            self.modal1_images = [self.modal1_images[index] for index in random_indices]
+            self.modal2_images = [self.modal2_images[index] for index in random_indices]
             self.gt_images = [self.gt_images[index] for index in random_indices]
             self.basenames = [self.basenames[index] for index in random_indices]
 
     def __len__(self):
-        return len(self.rgb_images)
+        return len(self.modal1_images)
 
     def __getitem__(self, idx):
-        sample = {'rgb': self.rgb_images[idx], 'evi': self.evi2_images[idx], 'label': self.gt_images[idx]}
+        sample = {'modal1': self.modal1_images[idx], 'modal2': self.modal2_images[idx], 'label': self.gt_images[idx]}
 
         if self.transform:
             sample = self.transform(sample)
@@ -86,7 +87,7 @@ class RandomHSV(object):
         self.v_range = v_range
 
     def __call__(self, sample):
-        img = sample['rgb']
+        img = sample['modal1']
         img_hsv = matplotlib.colors.rgb_to_hsv(img)
         img_h, img_s, img_v = img_hsv[:, :, 0], img_hsv[:, :, 1], img_hsv[:, :, 2]
         h_random = np.random.uniform(min(self.h_range), max(self.h_range))
@@ -98,23 +99,23 @@ class RandomHSV(object):
         img_hsv = np.stack([img_h, img_s, img_v], axis=2)
         img_new = matplotlib.colors.hsv_to_rgb(img_hsv)
 
-        return {'rgb': img_new, 'evi': sample['evi'], 'label': sample['label']}
+        return {'modal1': img_new, 'modal2': sample['modal2'], 'label': sample['label']}
 
 
 class ScaleNorm(object):
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
 
         # Bi-linear
-        rgb = skimage.transform.resize(rgb, (image_h, image_w), order=1,
-                                       mode='reflect', preserve_range=True)
+        modal1 = skimage.transform.resize(modal1, (image_h, image_w), order=1,
+                                          mode='reflect', preserve_range=True)
         # Nearest-neighbor
-        evi = skimage.transform.resize(evi, (image_h, image_w), order=0,
-                                       mode='reflect', preserve_range=True)
+        modal2 = skimage.transform.resize(modal2, (image_h, image_w), order=0,
+                                          mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (image_h, image_w), order=0,
                                          mode='reflect', preserve_range=True)
 
-        return {'rgb': rgb, 'evi': evi, 'label': label}
+        return {'modal1': modal1, 'modal2': modal2, 'label': label}
 
 
 class RandomScale(object):
@@ -123,22 +124,22 @@ class RandomScale(object):
         self.scale_high = max(scale)
 
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
 
         target_scale = random.uniform(self.scale_low, self.scale_high)
         # (H, W, C)
-        target_height = int(round(target_scale * rgb.shape[0]))
-        target_width = int(round(target_scale * rgb.shape[1]))
+        target_height = int(round(target_scale * modal1.shape[0]))
+        target_width = int(round(target_scale * modal1.shape[1]))
         # Bi-linear
-        rgb = skimage.transform.resize(rgb, (target_height, target_width),
-                                       order=1, mode='reflect', preserve_range=True)
+        modal1 = skimage.transform.resize(modal1, (target_height, target_width),
+                                          order=1, mode='reflect', preserve_range=True)
         # Nearest-neighbor
-        evi = skimage.transform.resize(evi, (target_height, target_width),
-                                       order=0, mode='reflect', preserve_range=True)
+        modal2 = skimage.transform.resize(modal2, (target_height, target_width),
+                                          order=0, mode='reflect', preserve_range=True)
         label = skimage.transform.resize(label, (target_height, target_width),
                                          order=0, mode='reflect', preserve_range=True)
 
-        return {'rgb': rgb, 'evi': evi, 'label': label}
+        return {'modal1': modal1, 'modal2': modal2, 'label': label}
 
 
 class RandomCrop(object):
@@ -147,26 +148,26 @@ class RandomCrop(object):
         self.tw = tw
 
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
-        h = rgb.shape[0]
-        w = rgb.shape[1]
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
+        h = modal1.shape[0]
+        w = modal1.shape[1]
         i = random.randint(0, h - self.th)
         j = random.randint(0, w - self.tw)
 
-        return {'rgb': rgb[i:i + image_h, j:j + image_w, :],
-                'evi': evi[i:i + image_h, j:j + image_w],
+        return {'modal1': modal1[i:i + image_h, j:j + image_w, :],
+                'modal2': modal2[i:i + image_h, j:j + image_w],
                 'label': label[i:i + image_h, j:j + image_w]}
 
 
 class RandomFlip(object):
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
         if random.random() > 0.5:
-            rgb = np.fliplr(rgb).copy()
-            evi = np.fliplr(evi).copy()
+            modal1 = np.fliplr(modal1).copy()
+            modal2 = np.fliplr(modal2).copy()
             label = np.fliplr(label).copy()
 
-        return {'rgb': rgb, 'evi': evi, 'label': label}
+        return {'modal1': modal1, 'modal2': modal2, 'label': label}
 
 
 class RandomRotate(object):
@@ -175,15 +176,15 @@ class RandomRotate(object):
         self.angle_high = max(angle_range)
 
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
 
         angle = random.uniform(self.angle_low, self.angle_high)
 
-        rgb = skimage.transform.rotate(rgb, angle=angle, order=1, mode='reflect', preserve_range=True)
-        evi = skimage.transform.rotate(evi, angle=angle, order=0, mode='reflect', preserve_range=True)
+        modal1 = skimage.transform.rotate(modal1, angle=angle, order=1, mode='reflect', preserve_range=True)
+        modal2 = skimage.transform.rotate(modal2, angle=angle, order=0, mode='reflect', preserve_range=True)
         label = skimage.transform.rotate(label, angle=angle, order=0, mode='reflect', preserve_range=True)
 
-        return {'rgb': rgb, 'evi': evi, 'label': label}
+        return {'modal1': modal1, 'modal2': modal2, 'label': label}
 
 
 class RandomSkew(object):
@@ -192,44 +193,58 @@ class RandomSkew(object):
         self.skew_high = max(skew_range)
 
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
 
         affine_tf = skimage.transform.AffineTransform(shear=random.uniform(self.skew_low, self.skew_high))
 
-        rgb = skimage.transform.warp(rgb, inverse_map=affine_tf, order=1, mode='reflect', preserve_range=True)
-        evi = skimage.transform.warp(evi, inverse_map=affine_tf, order=0, mode='reflect', preserve_range=True)
+        modal1 = skimage.transform.warp(modal1, inverse_map=affine_tf, order=1, mode='reflect', preserve_range=True)
+        modal2 = skimage.transform.warp(modal2, inverse_map=affine_tf, order=0, mode='reflect', preserve_range=True)
         label = skimage.transform.warp(label, inverse_map=affine_tf, order=0, mode='reflect', preserve_range=True)
 
-        return {'rgb': rgb, 'evi': evi, 'label': label}
+        return {'modal1': modal1, 'modal2': modal2, 'label': label}
 
 
 # Transforms on torch.*Tensor
 class ToZeroOneRange(object):
     def __call__(self, sample):
-        rgb, evi = sample['rgb'], sample['evi']
-        rgb = rgb / 255.
-        evi = evi / 255.
+        modal1, modal2 = sample['modal1'], sample['modal2']
+        modal1 = modal1 / 255.
+        modal2 = modal2 / 255.
 
-        sample['rgb'] = rgb
-        sample['evi'] = evi
+        sample['modal1'] = modal1
+        sample['modal2'] = modal2
 
         return sample
 
 
 # Transforms on torch.*Tensor
 class Normalize(object):
+    def __init__(self, modal1_name='rgb', modal2_name='evi2_gray'):
+        self.modal1_name = modal1_name
+        self.modal2_name = modal2_name
+
     def __call__(self, sample):
-        rgb, evi = sample['rgb'], sample['evi']
-        rgb = rgb / 255.
-        evi = evi / 255.
+        modal1, modal2 = sample['modal1'], sample['modal2']
+        modal1 = modal1 / 255.
+        modal2 = modal2 / 255.
 
-        rgb = torchvision.transforms.Normalize(mean=[0.462971, 0.397023, 0.326541],
-                                               std=[0.293528, 0.293154, 0.307788])(rgb)
-        evi = torchvision.transforms.Normalize(mean=[0.632958],
-                                               std=[0.150213])(evi)
+        mean_modality = {
+            'rgb': [0.462971, 0.397023, 0.326541],
+            'evi2_gray': [0.632958],
+        }
 
-        sample['rgb'] = rgb
-        sample['evi'] = evi
+        std_modality = {
+            'rgb': [0.293528, 0.293154, 0.307788],
+            'evi2_gray': [0.150213],
+        }
+
+        modal1 = torchvision.transforms.Normalize(mean=mean_modality[self.modal1_name],
+                                                  std=std_modality[self.modal1_name])(modal1)
+        modal2 = torchvision.transforms.Normalize(mean=mean_modality[self.modal2_name],
+                                                  std=std_modality[self.modal2_name])(modal2)
+
+        sample['modal1'] = modal1
+        sample['modal2'] = modal2
 
         return sample
 
@@ -238,7 +253,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        rgb, evi, label = sample['rgb'], sample['evi'], sample['label']
+        modal1, modal2, label = sample['modal1'], sample['modal2'], sample['label']
 
         # Generate different label scales
         label2 = skimage.transform.resize(label, (label.shape[0] // 2, label.shape[1] // 2),
@@ -253,10 +268,10 @@ class ToTensor(object):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
-        rgb = rgb.transpose((2, 0, 1))
-        evi = np.expand_dims(evi, 0).astype(np.float)
-        return {'rgb': torch.from_numpy(rgb).float(),
-                'evi': torch.from_numpy(evi).float(),
+        modal1 = modal1.transpose((2, 0, 1))
+        modal2 = np.expand_dims(modal2, 0).astype(np.float)
+        return {'modal1': torch.from_numpy(modal1).float(),
+                'modal2': torch.from_numpy(modal2).float(),
                 'label': torch.from_numpy(label).float(),
                 'label2': torch.from_numpy(label2).float(),
                 'label3': torch.from_numpy(label3).float(),

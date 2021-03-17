@@ -38,19 +38,19 @@ args = parser.parse_args()
 device = torch.device("cuda:0" if args.cuda and torch.cuda.is_available() else "cpu")
 
 
-def visualize_result(img, evi, label, preds, info, args):
+def visualize_result(img, modal2, label, preds, info, args):
     # segmentation
     img = img.squeeze(0).transpose(0, 2, 1)
-    evi = evi.squeeze(0).squeeze(0)
-    evi = (evi * 255 / evi.max()).astype(np.uint8)
-    evi = cv2.applyColorMap(evi, cv2.COLORMAP_JET)
-    evi = evi.transpose(2, 1, 0)
+    modal2 = modal2.squeeze(0).squeeze(0)
+    modal2 = (modal2 * 255 / modal2.max()).astype(np.uint8)
+    modal2 = cv2.applyColorMap(modal2, cv2.COLORMAP_JET)
+    modal2 = modal2.transpose(2, 1, 0)
     seg_color = utils.color_label_eval(label)
     # prediction
     pred_color = utils.color_label_eval(preds)
 
     # aggregate images and save
-    im_vis = np.concatenate((img, evi, seg_color, pred_color), axis=1).astype(np.uint8)
+    im_vis = np.concatenate((img, modal2, seg_color, pred_color), axis=1).astype(np.uint8)
     im_vis = im_vis.transpose(2, 1, 0)
 
     img_name = str(info)
@@ -81,13 +81,13 @@ def evaluate():
     b_meter = AverageMeter()
     with torch.no_grad():
         for batch_idx, sample in enumerate(val_loader):
-            rgb = sample['rgb'].to(device)
-            evi = sample['evi'].to(device)
+            modal1 = sample['modal1'].to(device)
+            modal2 = sample['modal2'].to(device)
             label = sample['label'].numpy()
             basename = sample['basename'][0]
 
             with torch.no_grad():
-                pred = model(rgb, evi)
+                pred = model(modal1, modal2)
 
             output = torch.argmax(pred, 1) + 1
             output = output.squeeze(0).cpu().numpy()
@@ -104,7 +104,7 @@ def evaluate():
                   .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), batch_idx, acc))
 
             if args.visualize:
-                visualize_result(rgb, evi, label, output, batch_idx, args)
+                visualize_result(modal1, modal2, label, output, batch_idx, args)
 
             if args.save_predictions:
                 colored_output = utils.color_label_eval(output).astype(np.uint8)

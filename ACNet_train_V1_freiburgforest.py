@@ -27,18 +27,21 @@ with open(weight_path, 'r') as f:
         x = x.strip().strip('\ufeff')
         freiburgforest_frq.append(float(x))
 print("Number of class weights:", len(freiburgforest_frq))
+# TODO: Try manually increasing the weights of uncommon classes (x2 for example)
 
 parser = argparse.ArgumentParser(description='Multimodal Semantic Segmentation - ACNet training')
 parser.add_argument('--train-dir', default=None, metavar='DIR',
                     help='path to train dataset')
 parser.add_argument('--valid-dir', default=None, metavar='DIR',
                     help='path to valid dataset')
+parser.add_argument('--modal1', default='rgb', help='Modality 1 for the model (3 channels)')
+parser.add_argument('--modal2', default='evi2_gray', help='Modality 2 for the model (1 channel)')
 parser.add_argument('--cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=1500, type=int, metavar='N',
-                    help='number of total epochs to run (default: 1500)')
+parser.add_argument('--epochs', default=300, type=int, metavar='N',
+                    help='number of total epochs to run (default: 300)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=5, type=int,
@@ -87,7 +90,9 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.train_dir
+        data_dir=args.train_dir,
+        modal1_name=args.modal1,
+        modal2_name=args.modal2,
     )
 
     valid_data = ACNet_data.FreiburgForest(
@@ -97,6 +102,8 @@ def train():
             ACNet_data.Normalize()
         ]),
         data_dir=args.valid_dir,
+        modal1_name=args.modal1,
+        modal2_name=args.modal2,
         fraction=0.1
     )
 
@@ -138,6 +145,8 @@ def train():
         optimizer, T_0=args.epochs // 4, T_mult=2, eta_min=1e-4)
     global_step = 0
 
+    # TODO: add early stop to avoid overfitting
+
     # Continue training from previous checkpoint
     if args.last_ckpt:
         global_step, args.start_epoch = utils.load_ckpt(model, optimizer, scheduler, args.last_ckpt, device)
@@ -150,11 +159,11 @@ def train():
             utils.save_ckpt(args.ckpt_dir, model, optimizer, scheduler, global_step, epoch)
 
         for batch_idx, sample in enumerate(train_loader):
-            rgb, evi = sample['rgb'].to(device), sample['evi'].to(device)
+            modal1, modal2 = sample['modal1'].to(device), sample['modal2'].to(device)
             target_scales = [sample[s].to(device) for s in ['label', 'label2', 'label3', 'label4', 'label5']]
 
             optimizer.zero_grad()
-            pred_scales = model(rgb, evi, args.checkpoint)
+            pred_scales = model(modal1, modal2, args.checkpoint)
             loss = criterion(pred_scales, target_scales)
             loss.backward()
             optimizer.step()
@@ -166,10 +175,10 @@ def train():
                 for name, param in model.named_parameters():
                     writer.add_histogram(name, param.detach().cpu().numpy(), global_step, bins='doane')
 
-                grid_image = make_grid(rgb[:3].detach().cpu(), 3, normalize=False)
-                writer.add_image('RGB', grid_image, global_step)
-                grid_image = make_grid(evi[:3].detach().cpu(), 3, normalize=False)
-                writer.add_image('EVI', grid_image, global_step)
+                grid_image = make_grid(modal1[:3].detach().cpu(), 3, normalize=False)
+                writer.add_image('Modal1', grid_image, global_step)
+                grid_image = make_grid(modal2[:3].detach().cpu(), 3, normalize=False)
+                writer.add_image('Modal2', grid_image, global_step)
                 grid_image = make_grid(utils.color_label(torch.argmax(pred_scales[0][:3], 1) + 1), 3, normalize=True,
                                        range=(0, 255))
                 writer.add_image('Prediction', grid_image, global_step)
@@ -184,9 +193,9 @@ def train():
                     model.eval()
 
                     sample_val = next(iter(valid_loader))
-                    rgb_val, evi_val = sample_val['rgb'].to(device), sample_val['evi'].to(device)
+                    modal1_val, modal2_val = sample_val['modal1'].to(device), sample_val['modal2'].to(device)
                     target_val = sample_val['label'].to(device)
-                    pred_val = model(rgb_val, evi_val)
+                    pred_val = model(modal1_val, modal2_val)
                     loss_val = criterion([pred_val], [target_val])
 
                     writer.add_scalar('Loss validation', loss_val.item(), global_step=global_step)
