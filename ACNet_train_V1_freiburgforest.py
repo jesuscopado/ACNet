@@ -40,8 +40,8 @@ parser.add_argument('--cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=300, type=int, metavar='N',
-                    help='number of total epochs to run (default: 300)')
+parser.add_argument('--epochs', default=900, type=int, metavar='N',
+                    help='number of total epochs to run (default: 900)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=5, type=int,
@@ -142,7 +142,7 @@ def train():
     # lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
     # scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=args.epochs // 4, T_mult=2, eta_min=1e-4)
+        optimizer, T_0=args.epochs // 3, T_mult=1, eta_min=8e-4)
     global_step = 0
 
     # TODO: add early stop to avoid overfitting
