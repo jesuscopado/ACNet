@@ -104,7 +104,6 @@ def train():
         data_dir=args.valid_dir,
         modal1_name=args.modal1,
         modal2_name=args.modal2,
-        fraction=0.1
     )
 
     '''
