@@ -10,7 +10,6 @@ import torch.optim
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from torch import nn
-from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
@@ -40,8 +39,8 @@ parser.add_argument('--cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=900, type=int, metavar='N',
-                    help='number of total epochs to run (default: 900)')
+parser.add_argument('--epochs', default=1000, type=int, metavar='N',
+                    help='number of total epochs to run (default: 1000)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=5, type=int,
@@ -117,7 +116,7 @@ def train():
 
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.workers, pin_memory=False)
-    valid_loader = DataLoader(valid_data, batch_size=len(valid_data), shuffle=False,
+    valid_loader = DataLoader(valid_data, batch_size=args.batch_size * 3, shuffle=False,
                               num_workers=1, pin_memory=False)
 
     # Initialize model
@@ -141,7 +140,7 @@ def train():
     # lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
     # scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=args.epochs // 3, T_mult=1, eta_min=8e-4)
+        optimizer, T_0=args.epochs // 2, T_mult=1, eta_min=6e-4)
     global_step = 0
 
     # TODO: add early stop to avoid overfitting
@@ -191,21 +190,27 @@ def train():
                 with torch.no_grad():
                     model.eval()
 
-                    sample_val = next(iter(valid_loader))
-                    modal1_val, modal2_val = sample_val['modal1'].to(device), sample_val['modal2'].to(device)
-                    target_val = sample_val['label'].to(device)
-                    pred_val = model(modal1_val, modal2_val)
-                    loss_val = criterion([pred_val], [target_val])
+                    losses_val = []
+                    acc_list = []
+                    iou_list = []
+                    for sample_val in valid_loader:
+                        modal1_val, modal2_val = sample_val['modal1'].to(device), sample_val['modal2'].to(device)
+                        target_val = sample_val['label'].to(device)
+                        pred_val = model(modal1_val, modal2_val)
 
-                    writer.add_scalar('Loss validation', loss_val.item(), global_step=global_step)
-                    writer.add_scalar('Accuracy', utils.accuracy(
-                        (torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
-                        target_val.detach().cpu().numpy().astype(int))[0], global_step=global_step)
-                    iou = utils.compute_IoU(
-                        y_pred=(torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
-                        y_true=target_val.detach().cpu().numpy().astype(int),
-                        num_classes=5
-                    )
+                        losses_val.append(criterion([pred_val], [target_val]).item())
+                        acc_list.append(utils.accuracy(
+                            (torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
+                            target_val.detach().cpu().numpy().astype(int))[0])
+                        iou_list.append(utils.compute_IoU(
+                            y_pred=(torch.argmax(pred_val, 1) + 1).detach().cpu().numpy().astype(int),
+                            y_true=target_val.detach().cpu().numpy().astype(int),
+                            num_classes=5
+                        ))
+
+                    writer.add_scalar('Loss validation', sum(losses_val) / len(losses_val), global_step=global_step)
+                    writer.add_scalar('Accuracy', sum(acc_list) / len(acc_list), global_step=global_step)
+                    iou = np.mean(np.stack(iou_list, axis=0), axis=0)
                     writer.add_scalar('IoU_Road', iou[0], global_step=global_step)
                     writer.add_scalar('IoU_Grass', iou[1], global_step=global_step)
                     writer.add_scalar('IoU_Vegetation', iou[2], global_step=global_step)
