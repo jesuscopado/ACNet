@@ -21,6 +21,8 @@ from utils.utils import load_ckpt, intersectionAndUnion, AverageMeter, accuracy,
 parser = argparse.ArgumentParser(description='RGBD Sementic Segmentation')
 parser.add_argument('--test-dir', default=None, metavar='DIR',
                     help='path to test dataset')
+parser.add_argument('--modal1', default='rgb', help='Modality 1 for the model (3 channels)')
+parser.add_argument('--modal2', default='evi2_gray', help='Modality 2 for the model (1 channel)')
 parser.add_argument('-o', '--output-dir', default='./result/', metavar='DIR',
                     help='path to output')
 parser.add_argument('--cuda', action='store_true', default=False,
@@ -70,7 +72,9 @@ def evaluate():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.test_dir
+        data_dir=args.test_dir,
+        modal1_name=args.modal1,
+        modal2_name=args.modal2,
     )
     val_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
 
