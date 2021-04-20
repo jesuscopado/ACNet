@@ -16,7 +16,8 @@ image_w = 768
 
 
 class FreiburgForest(Dataset):
-    def __init__(self, transform=None, data_dir=None, modal1_name='rgb', modal2_name='evi2_gray', fraction=None):
+    def __init__(self, transform=None, data_dir=None, modal1_name='rgb', modal2_name='evi2_gray',
+                 gt_available=True, fraction=None):
         self.transform = transform
 
         self.modal1_images = []
@@ -34,12 +35,16 @@ class FreiburgForest(Dataset):
 
             modal1_path = glob.glob(os.path.join(os.path.join(data_dir, modal1_folder_name), f'{basename}*'))[0]
             modal2_path = glob.glob(os.path.join(os.path.join(data_dir, modal2_folder_name), f'{basename}*'))[0]
-            gt_path = glob.glob(os.path.join(os.path.join(data_dir, gt_folder_name), f'{basename}*'))[0]
 
             self.modal1_images.append(imageio.imread(modal1_path))
             self.modal2_images.append(imageio.imread(modal2_path))
-            self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
             self.basenames.append(basename)
+
+            if gt_available:
+                gt_path = glob.glob(os.path.join(os.path.join(data_dir, gt_folder_name), f'{basename}*'))[0]
+                self.gt_images.append(imageio.imread(gt_path).astype(float))  # needed for skimage.transform.resize
+            else:
+                self.gt_images.append(np.zeros_like(imageio.imread(modal2_path)).astype(float))
 
         if fraction is not None:  # Only use a fraction of the data in the directory
             len_data = len(self.modal1_images)
