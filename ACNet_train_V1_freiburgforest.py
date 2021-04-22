@@ -35,7 +35,7 @@ parser.add_argument('--valid-dir', default=None, metavar='DIR',
                     help='path to valid dataset')
 parser.add_argument('--train-dir2', default=None, metavar='DIR',
                     help='path to train dataset (2)')
-parser.add_argument('--train-dir2', default=None, metavar='DIR',
+parser.add_argument('--valid-dir2', default=None, metavar='DIR',
                     help='path to valid dataset (2)')
 parser.add_argument('--modal1', default='rgb', help='Modality 1 for the model (3 channels)')
 parser.add_argument('--modal2', default='evi2_gray', help='Modality 2 for the model (1 channel)')
