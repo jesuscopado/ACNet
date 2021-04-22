@@ -33,7 +33,7 @@ parser.add_argument('--num-class', default=5, type=int,
                     help='number of classes')
 parser.add_argument('--visualize', default=False, action='store_true',
                     help='if output image')
-parser.add_argument('--save-predictions', default=False, action='store_true',
+parser.add_argument('--save-predictions', default=True, action='store_true',
                     help='if all predictions want to be saved')
 
 args = parser.parse_args()
@@ -72,7 +72,7 @@ def evaluate():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.test_dir,
+        data_dirs=[args.test_dir],
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )

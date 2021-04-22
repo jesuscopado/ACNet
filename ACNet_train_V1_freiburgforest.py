@@ -33,6 +33,10 @@ parser.add_argument('--train-dir', default=None, metavar='DIR',
                     help='path to train dataset')
 parser.add_argument('--valid-dir', default=None, metavar='DIR',
                     help='path to valid dataset')
+parser.add_argument('--train-dir2', default=None, metavar='DIR',
+                    help='path to train dataset (2)')
+parser.add_argument('--train-dir2', default=None, metavar='DIR',
+                    help='path to valid dataset (2)')
 parser.add_argument('--modal1', default='rgb', help='Modality 1 for the model (3 channels)')
 parser.add_argument('--modal2', default='evi2_gray', help='Modality 2 for the model (1 channel)')
 parser.add_argument('--cuda', action='store_true', default=False,
@@ -89,7 +93,7 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.train_dir,
+        data_dirs=[args.train_dir, args.train_dir_extra],
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )
@@ -100,7 +104,7 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.valid_dir,
+        data_dirs=[args.valid_dir],
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )
@@ -135,12 +139,14 @@ def train():
     criterion.to(device)
 
     # TODO: try with different optimizers and schedulers (CyclicLR exp_range for example)
+    # TODO: try with a smaller LR (currently loss decay is too steep and then doesn't change)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr,
                                 momentum=args.momentum, weight_decay=args.weight_decay)
-    # lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
-    # scheduler = LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=args.epochs // 2, T_mult=1, eta_min=6e-4)
+    lr_decay_lambda = lambda epoch: args.lr_decay_rate ** (epoch // args.lr_epoch_per_decay)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay_lambda)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+    #     optimizer, T_0=args.epochs // 2, T_mult=1, eta_min=6e-4)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=5e-4)
     global_step = 0
 
     # TODO: add early stop to avoid overfitting
