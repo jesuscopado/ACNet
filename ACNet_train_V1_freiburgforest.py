@@ -93,7 +93,7 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dirs=[args.train_dir, args.train_dir_extra],
+        data_dirs=[args.train_dir, args.train_dir2],
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )
