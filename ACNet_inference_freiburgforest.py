@@ -50,7 +50,7 @@ def inference():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dir=args.data_dir,
+        data_dirs=[args.data_dir],
         modal1_name=args.modal1,
         modal2_name=args.modal2,
         gt_available=False
