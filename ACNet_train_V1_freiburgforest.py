@@ -79,6 +79,7 @@ image_h = 384
 
 
 def train():
+    train_dirs = [train_dir for train_dir in [args.train_dir, args.train_dir2] if train_dir is not None]
     train_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
             ACNet_data.ScaleNorm(),
@@ -93,18 +94,19 @@ def train():
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dirs=[args.train_dir, args.train_dir2],
+        data_dirs=train_dirs,
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )
 
+    valid_dirs = [valid_dir for valid_dir in [args.valid_dir, args.valid_dir2] if valid_dir is not None]
     valid_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
             ACNet_data.ScaleNorm(),
             ACNet_data.ToTensor(),
             ACNet_data.Normalize()
         ]),
-        data_dirs=[args.valid_dir],
+        data_dirs=valid_dirs,
         modal1_name=args.modal1,
         modal2_name=args.modal2,
     )
