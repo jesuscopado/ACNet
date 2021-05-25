@@ -236,18 +236,19 @@ class Normalize(object):
 
         mean_modality = {
             'rgb': [0.462971, 0.397023, 0.326541],
-            'evi2_gray': [0.632958],
+            'evi2_gray': [0.505839],
         }
 
         std_modality = {
             'rgb': [0.293528, 0.293154, 0.307788],
-            'evi2_gray': [0.150213],
+            'evi2_gray': [0.120141],
         }
 
-        modal1 = torchvision.transforms.Normalize(mean=mean_modality[self.modal1_name],
-                                                  std=std_modality[self.modal1_name])(modal1)
-        modal2 = torchvision.transforms.Normalize(mean=mean_modality[self.modal2_name],
-                                                  std=std_modality[self.modal2_name])(modal2)
+        if self.modal1_name in mean_modality and self.modal2_name in mean_modality:
+            modal1 = torchvision.transforms.Normalize(
+                mean=mean_modality[self.modal1_name], std=std_modality[self.modal1_name])(modal1)
+            modal2 = torchvision.transforms.Normalize(
+                mean=mean_modality[self.modal2_name], std=std_modality[self.modal2_name])(modal2)
 
         sample['modal1'] = modal1
         sample['modal2'] = modal2
