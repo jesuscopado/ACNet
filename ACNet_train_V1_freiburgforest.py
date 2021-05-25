@@ -63,7 +63,7 @@ parser.add_argument('--last-ckpt', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--lr-decay-rate', default=0.8, type=float,
                     help='decay rate of learning rate (default: 0.8)')
-parser.add_argument('--lr-epoch-per-decay', default=100, type=int,
+parser.add_argument('--lr-epoch-per-decay', default=200, type=int,
                     help='epoch of per decay of learning rate (default: 150)')
 parser.add_argument('--ckpt-dir', default='./model/', metavar='DIR',
                     help='path to save checkpoints')
