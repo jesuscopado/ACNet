@@ -82,9 +82,9 @@ def train():
     train_dirs = [train_dir for train_dir in [args.train_dir, args.train_dir2] if train_dir is not None]
     train_data = ACNet_data.FreiburgForest(
         transform=transforms.Compose([
-            ACNet_data.ScaleNorm(),
-            ACNet_data.RandomRotate((-13, 13)),
-            ACNet_data.RandomSkew((-0.05, 0.10)),
+            # ACNet_data.ScaleNorm(),
+            # ACNet_data.RandomRotate((-13, 13)),
+            # ACNet_data.RandomSkew((-0.05, 0.10)),
             ACNet_data.RandomScale((1.0, 1.4)),
             ACNet_data.RandomHSV((0.9, 1.1),
                                  (0.9, 1.1),
