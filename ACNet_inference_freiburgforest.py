@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description='Multimodal Semantic Segmentation')
 parser.add_argument('--data-dir', default=None, metavar='DIR',
                     help='path to dataset')
 parser.add_argument('--modal1', default='rgb', help='Modality 1 for the model (3 channels)')
-parser.add_argument('--modal2', default='evi2', help='Modality 2 for the model (1 channel)')
+parser.add_argument('--modal2', default='evi2_gray', help='Modality 2 for the model (1 channel)')
 parser.add_argument('-o', '--output-dir', default='./pred/', metavar='DIR',
                     help='path to output')
 parser.add_argument('--cuda', action='store_true', default=False,
